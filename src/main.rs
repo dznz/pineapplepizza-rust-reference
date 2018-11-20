@@ -3,6 +3,7 @@ extern crate nom;
 
 use std::option;
 use std::collections::HashMap;
+use nom::IResult;
 
 #[derive(Debug,PartialEq)]
 pub struct StructuredListItem<'a> {
@@ -20,24 +21,20 @@ pub struct StructuredCollection<'a> {
   headings: Vec<StructuredCollection<'a>>
 }
 
-named!(ul<&str, Vec<StructuredListItem>>,
-  alt!(
-    many0!(do_parse!(
-            tag!("- ")  >>
-      name: take_till!(|ch| ch == '\r') >>
-            tag!("\r\n") >>
-      kv:   map!(many0!(do_parse!(tag!("  ") >>
-              val: separated_pair!(take_till!(|ch| ch == ':' || ch == '\r'), tag!(":"), take_till!(|ch| ch == ':' || ch == '\r')) >> (val))), |vec: Vec<_>| vec.into_iter().collect()) >>
-            (StructuredListItem { name: name, kv: kv })
-    )) |
-    many0!(do_parse!(
-            tag!("* ")  >>
+fn ul_wrapper<'a>(input: &'a str, sep: &'static str) -> IResult<&'a str, Vec<StructuredListItem<'a>>> {
+    many0!(input, do_parse!(
+            tag!(sep)  >>
       name: take_till!(|ch| ch == '\r') >>
             tag!("\r\n") >>
       kv:   map!(many0!(do_parse!(tag!("  ") >>
               val: separated_pair!(take_till!(|ch| ch == ':' || ch == '\r'), tag!(":"), take_till!(|ch| ch == ':' || ch == '\r')) >> (val))), |vec: Vec<_>| vec.into_iter().collect()) >>
             (StructuredListItem { name: name, kv: kv })
     ))
+}
+
+named!(ul<&str, Vec<StructuredListItem>>,
+  alt!(
+    apply!(ul_wrapper, "- ") | apply!(ul_wrapper, "* ")
   )
 );
 
