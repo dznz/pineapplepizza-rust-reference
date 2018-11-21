@@ -40,9 +40,6 @@ fn ul_to_html(ul: Vec<StructuredListItem>) -> String {
   for u in ul {
     acc.push_str(&format!("{}{}{}{}{}", "<li>", u.name, "<br/>", kv_to_html(u.kv.clone()), "</li>"));
   }
-  //let x: Vec<&str> = ul.iter().map(|u| format!("{}{}{}{}{}", "<li>", u.name, "<br/>", kv_to_html(u.kv.clone()), "</li>").as_str()).collect();
-  //let y = x.join("");
-  //format!("{}{}{}", "<ul>\r", y, "</ul>\r").as_str()
   acc.push_str("</ul>\r");
   acc
 }
