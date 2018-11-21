@@ -95,7 +95,7 @@ fn ul_wrapper<'a>(input: &'a str, sepb: bool) -> IResult<&'a str, Vec<Structured
 
 fn ol_wrapper<'a>(input: &'a str) -> IResult<&'a str, Vec<StructuredOrderedListItem<'a>>> {
     //let sep = (if sepb {"- "} else {"* "});
-    many1!(input, do_parse!(
+    many0!(input, do_parse!(
       num:  call!(nom::digit) >> // Eventually, validate using this
             tag!(". ")  >>
       name: take_till!(|ch| ch == '\n') >>
@@ -107,7 +107,7 @@ fn ol_wrapper<'a>(input: &'a str) -> IResult<&'a str, Vec<StructuredOrderedListI
 
 named!(ul<&str, Vec<StructuredListItem>>,
   alt!(
-    apply!(ul_wrapper, false) | apply!(ul_wrapper, true)
+    apply!(ul_wrapper, false) | apply!(ul_wrapper, true) | value!(vec!())
   )
 );
 
