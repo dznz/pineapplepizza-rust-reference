@@ -27,6 +27,26 @@ pub struct StructuredCollection<'a> {
   headings: Vec<StructuredCollection<'a>>
 }
 
+// TODO: Actually do something proper here, eg using bodil's typed_html or at least using string escaping
+fn kv_to_html<'a>(kv: HashMap<&'a str, &'a str>) -> String {
+  let mut acc = String::new();
+  for (k, v) in kv.iter() {
+    acc.push_str(&format!("{}{}{}{}", k, ": ", v, "<br/>\r"));
+  }
+  acc
+}
+fn ul_to_html(ul: Vec<StructuredListItem>) -> String {
+  let mut acc = String::from("<ul>\r");
+  for u in ul {
+    acc.push_str(&format!("{}{}{}{}{}", "<li>", u.name, "<br/>", kv_to_html(u.kv.clone()), "</li>"));
+  }
+  //let x: Vec<&str> = ul.iter().map(|u| format!("{}{}{}{}{}", "<li>", u.name, "<br/>", kv_to_html(u.kv.clone()), "</li>").as_str()).collect();
+  //let y = x.join("");
+  //format!("{}{}{}", "<ul>\r", y, "</ul>\r").as_str()
+  acc.push_str("</ul>\r");
+  acc
+}
+
 fn ul_wrapper<'a>(input: &'a str, sepb: bool) -> IResult<&'a str, Vec<StructuredListItem<'a>>> {
     let sep = (if sepb {"- "} else {"* "});
     many1!(input, do_parse!(
@@ -90,7 +110,6 @@ fn parse_list_items() {
     Err(why) => panic!("{}", why.description()),
     Ok((_, x))    => x.clone()
   };
-  assert_eq!(list_items, sample_list_items)
-  //print!("{:?}", list_items_maybe); //assert_eq!(list_items, sample_list_items)
-    
+  assert_eq!(list_items, sample_list_items);
+  assert_eq!(ul_to_html(list_items), "<ul>\r<li>Foo bar baz<br/>key: value<br/>\r</li><li>Other stuff<br/>Description: Thing<br/>\rCaveat: Stuff<br/>\r</li><li>No kvs<br/></li></ul>\r");
 }
