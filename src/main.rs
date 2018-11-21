@@ -12,6 +12,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use nom::ErrorKind::Custom;
 
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -127,7 +128,7 @@ fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollec
     let x = do_parse!(input, tag!(hashes) >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name));
     match x {
       Ok((rest, name)) => h_sub_wrapper(rest, level, name),
-      _                => panic!("Do some actual checking here")
+      _                => Err(nom::Err::Error(nom::Context::Code(input, nom::ErrorKind::Custom(1)))) // panic!("Do some actual checking here")
     }
   }
 }
