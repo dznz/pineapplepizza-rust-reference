@@ -18,11 +18,16 @@ pub struct StructuredListItem<'a> {
 }
 
 #[derive(Debug,PartialEq,Eq,Clone)]
+pub struct StructuredOrderedListItem<'a> {
+  pub name: &'a str,
+}
+
+#[derive(Debug,PartialEq,Eq,Clone)]
 pub struct StructuredCollection<'a> {
   level: u8,
   name: &'a str,
   text: Option<&'a str>,
-  ol: Vec<StructuredListItem<'a>>,
+  ol: Vec<StructuredOrderedListItem<'a>>,
   ul: Vec<StructuredListItem<'a>>,
   headings: Vec<StructuredCollection<'a>>
 }
@@ -43,10 +48,10 @@ fn ul_to_html(ul: Vec<StructuredListItem>) -> String {
   acc.push_str("</ul>\r");
   acc
 }
-fn ol_to_html(ol: Vec<StructuredListItem>) -> String {
+fn ol_to_html(ol: Vec<StructuredOrderedListItem>) -> String {
   let mut acc = String::from("<ol>\r");
   for o in ol {
-    acc.push_str(&format!("{}{}{}{}{}", "<li>", o.name, "<br/>", kv_to_html(o.kv.clone()), "</li>"));
+    acc.push_str(&format!("{}{}{}", "<li>", o.name, "</li>"));
   }
   acc.push_str("</ol>\r");
   acc
@@ -84,10 +89,26 @@ fn ul_wrapper<'a>(input: &'a str, sepb: bool) -> IResult<&'a str, Vec<Structured
     ))
 }
 
+fn ol_wrapper<'a>(input: &'a str) -> IResult<&'a str, Vec<StructuredOrderedListItem<'a>>> {
+    //let sep = (if sepb {"- "} else {"* "});
+    many1!(input, do_parse!(
+      num:  call!(nom::digit) >> // Eventually, validate using this
+            tag!(". ")  >>
+      name: take_till!(|ch| ch == '\n') >>
+            tag!("\n") >>
+            (StructuredOrderedListItem { name: name })
+    ))
+}
+
+
 named!(ul<&str, Vec<StructuredListItem>>,
   alt!(
     apply!(ul_wrapper, false) | apply!(ul_wrapper, true)
   )
+);
+
+named!(ol<&str, Vec<StructuredOrderedListItem>>,
+  call!(ol_wrapper)
 );
 
 fn main() {
