@@ -43,6 +43,34 @@ fn ul_to_html(ul: Vec<StructuredListItem>) -> String {
   acc.push_str("</ul>\r");
   acc
 }
+fn ol_to_html(ol: Vec<StructuredListItem>) -> String {
+  let mut acc = String::from("<ol>\r");
+  for o in ol {
+    acc.push_str(&format!("{}{}{}{}{}", "<li>", o.name, "<br/>", kv_to_html(o.kv.clone()), "</li>"));
+  }
+  acc.push_str("</ol>\r");
+  acc
+}
+fn all_to_html(node: &StructuredCollection) -> String {
+  let mut acc = String::new();
+  if node.level == 0 {
+    acc.push_str(&format!("<html>\r<head>\r<title>{}</title>\r</head>\r<body>\r", node.name));
+  } else {
+    acc.push_str(&format!("<h{}>{}</h{}>\r", node.level, node.name, node.level));
+  }
+  for txt in node.text {
+    acc.push_str(&format!("<p>{}</p>\r", txt));
+  }
+  acc.push_str(&ol_to_html(node.ol.clone()));
+  acc.push_str(&ul_to_html(node.ul.clone()));
+  for h in node.headings.iter() {
+    acc.push_str(&all_to_html(h));
+  }
+  if node.level == 0 {
+    acc.push_str("</body>\r</html>");
+  }
+  acc
+}
 
 fn ul_wrapper<'a>(input: &'a str, sepb: bool) -> IResult<&'a str, Vec<StructuredListItem<'a>>> {
     let sep = (if sepb {"- "} else {"* "});
@@ -108,5 +136,6 @@ fn parse_list_items() {
     Ok((_, x))    => x.clone()
   };
   assert_eq!(list_items, sample_list_items);
-  assert_eq!(ul_to_html(list_items), "<ul>\r<li>Foo bar baz<br/>key: value<br/>\r</li><li>Other stuff<br/>Description: Thing<br/>\rCaveat: Stuff<br/>\r</li><li>No kvs<br/></li></ul>\r");
+  // HashMaps are unordered, so we can't do the naive check here, as it will sometimes give different serialisations
+  //assert_eq!(ul_to_html(list_items), "<ul>\r<li>Foo bar baz<br/>key: value<br/>\r</li><li>Other stuff<br/>Description: Thing<br/>\rCaveat: Stuff<br/>\r</li><li>No kvs<br/></li></ul>\r");
 }
