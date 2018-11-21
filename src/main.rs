@@ -3,6 +3,7 @@ extern crate nom;
 
 extern crate unicode_segmentation;
 
+use std::env;
 use std::option;
 use std::collections::HashMap;
 use nom::IResult;
@@ -158,7 +159,37 @@ named!(document<&str, StructuredCollection>,
 );
 
 fn main() {
-    println!("Hello, world!");
+  let args: Vec<String> = env::args().collect();
+  if (args.len() < 4) {
+    println!("Usage: pineapplepizza [FILE] (--html|...) [OUTPUT]");
+    return;
+  }
+  let input_file = args[1].clone();
+  let conversion_type = args[2].clone(); // For now we only support --html
+  let output_file = args[3].clone();
+  let path_in = Path::new(&input_file);
+  let path_out = Path::new(&output_file);
+  let mut file = match File::open(&path_in) {
+    // The `description` method of `io::Error` returns a string that
+    // describes the error
+    Err(why) => panic!("couldn't open {}: {}", &input_file,
+                                               why.description()),
+    Ok(file) => file,
+  };
+  // Read the file contents into a string, returns `io::Result<usize>`
+  let mut s = String::new();
+  match file.read_to_string(&mut s) {
+      Err(why) => panic!("couldn't read {}: {}", &input_file,
+                                                 why.description()),
+      _        => ()
+  }
+  let foo = s.clone();
+  let doc = match document(&foo) {
+    Ok((_, it)) => it,
+    bad         => panic!(format!("{:?}", bad))
+  };
+  println!("{:?}", doc);
+  println!("{}", all_to_html(&doc));
 }
 
 #[test]
