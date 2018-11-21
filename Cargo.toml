@@ -5,3 +5,4 @@ authors = ["Justin (:flaviusb) Marsh <justin.marsh@flaviusb.net>"]
 
 [dependencies]
 nom = "^4.1"
+unicode-segmentation = "1.2.1"

@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate nom;
 
+extern crate unicode_segmentation;
+
 use std::option;
 use std::collections::HashMap;
 use nom::IResult;
@@ -10,6 +12,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug,PartialEq,Eq,Clone)]
 pub struct StructuredListItem<'a> {
@@ -26,7 +29,7 @@ pub struct StructuredOrderedListItem<'a> {
 pub struct StructuredCollection<'a> {
   level: u8,
   name: &'a str,
-  text: Option<&'a str>,
+  text: Option<Vec<&'a str>>,
   ol: Vec<StructuredOrderedListItem<'a>>,
   ul: Vec<StructuredListItem<'a>>,
   headings: Vec<StructuredCollection<'a>>
@@ -63,8 +66,8 @@ fn all_to_html(node: &StructuredCollection) -> String {
   } else {
     acc.push_str(&format!("<h{}>{}</h{}>\r", node.level, node.name, node.level));
   }
-  for txt in node.text {
-    acc.push_str(&format!("<p>{}</p>\r", txt));
+  for txt in node.text.clone() {
+    acc.push_str(&format!("<p>{}</p>\r", txt.join("")));
   }
   acc.push_str(&ol_to_html(node.ol.clone()));
   acc.push_str(&ul_to_html(node.ul.clone()));
@@ -109,6 +112,49 @@ named!(ul<&str, Vec<StructuredListItem>>,
 
 named!(ol<&str, Vec<StructuredOrderedListItem>>,
   call!(ol_wrapper)
+);
+
+fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollection> {
+  if(level == 0) {
+    let x = alt!(input, do_parse!(tag!("# ") >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name)) | map!(verify!(do_parse!(name: take_till!(|ch| ch == '\n') >> underscore: take_while!(|c| c == '=') >> tag!("\n") >> (name, underscore)), |(txt, underscore): (&str, &str)| UnicodeSegmentation::graphemes(txt, true).collect::<Vec<&str>>().len() == UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len()), |(txt, len)| txt));
+    match x {
+      Ok((rest, name)) => h_sub_wrapper(rest, level, name),
+      _                => panic!("Do some actual checking here")
+    }
+  } else {
+    let hashes: &str = &"#".repeat(level as usize + 1);
+    let x = do_parse!(input, tag!(hashes) >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name));
+    match x {
+      Ok((rest, name)) => h_sub_wrapper(rest, level, name),
+      _                => panic!("Do some actual checking here")
+    }
+  }
+}
+fn h_sub_wrapper<'a>(input: &'a str, level: u8, name: &'a str) -> IResult<&'a str, StructuredCollection<'a>> {
+  do_parse!(input,
+    // Assume that something is text until we hit a start token for anything else
+    text: many0!(do_parse!(
+            // Check against start tokens - TODO: be more thorough about this
+            not!(alt!(tag!("- ") | tag!("* ") | do_parse!(call!(nom::digit) >> tag!(". ") >> ("")) | do_parse!(take_while!(|c| c == '#') >> tag!(" ") >> ("")))) >>
+            line: take_till!(|ch| ch == '\n') >> tag!("\n") >>
+            (line)
+            )) >>
+    ols: call!(ol) >>
+    uls: call!(ul) >>
+    headings: many0!(apply!(h_wrapper, level + 1)) >>
+    (StructuredCollection {
+      level: level,
+      name: name,
+      text: Some(text), // TODO: Do proper Some/None checking here
+      ol: ols,
+      ul: uls,
+      headings: headings
+    })
+  )
+}
+
+named!(document<&str, StructuredCollection>,
+  apply!(h_wrapper, 0)
 );
 
 fn main() {
