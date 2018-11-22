@@ -135,7 +135,7 @@ fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollec
     }
   } else {
     let hashes: &str = &"#".repeat(level as usize + 1);
-    let x = do_parse!(input, tag!(hashes) >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name));
+    let x = do_parse!(input, tag!(hashes) >> many0!(tag!(" ")) >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name));
     match x {
       Ok((rest, name)) => h_sub_wrapper(rest, level, name),
       _                => Err(nom::Err::Error(nom::Context::Code(input, nom::ErrorKind::Custom(1)))) // panic!("Do some actual checking here")
