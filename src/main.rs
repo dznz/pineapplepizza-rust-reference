@@ -131,7 +131,7 @@ fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollec
               map!(verify!(do_parse!(name: take_till!(|ch| ch == '\n') >> tag!("\n") >> underscore: take_while!(|c| c == '=') >> tag!("\n") >> (name, underscore)), |(txt, underscore): (&str, &str)| UnicodeSegmentation::graphemes(txt, true).collect::<Vec<&str>>().len() == UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len()), |(txt, len)| txt));
     match x {
       Ok((rest, name)) => h_sub_wrapper(rest, level, name),
-      _                => panic!("Do some actual checking here")
+      _                => panic!("No header found.")
     }
   } else {
     let hashes: &str = &"#".repeat(level as usize + 1);
