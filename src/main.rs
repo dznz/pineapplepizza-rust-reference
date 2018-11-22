@@ -21,25 +21,25 @@ use nom::ErrorKind::Custom;
 use serde::ser::{Serialize, Serializer, SerializeSeq, SerializeMap};
 use unicode_segmentation::UnicodeSegmentation;
 
-#[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
+#[derive(Debug,PartialEq,Eq,Clone,Serialize)]
 pub struct StructuredListItem<'a> {
   pub name: &'a str,
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub kv: HashMap<&'a str, &'a str>
 }
 
-#[derive(Debug,PartialEq,Eq,Clone,Deserialize)]
+#[derive(Debug,PartialEq,Eq,Clone)]
 pub struct StructuredOrderedListItem<'a> {
   pub name: &'a str,
 }
 
-#[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
+#[derive(Debug,PartialEq,Eq,Clone,Serialize)]
 pub struct StructuredCollection<'a> {
   #[serde(skip_serializing)]
   level: u8,
   name: &'a str,
   #[serde(skip_serializing_if = "Option::is_none")]
-  text: Option<Vec<&'a str>>,
+  text: Option<String>,
   #[serde(skip_serializing_if = "Vec::is_empty")]
   ol: Vec<StructuredOrderedListItem<'a>>,
   #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -97,7 +97,7 @@ fn all_to_html(node: &StructuredCollection) -> String {
     acc.push_str(&foo);
   }
   for txt in node.text.clone() {
-    acc.push_str(&format!("<p>{}</p>\n", txt.join("")));
+    acc.push_str(&format!("<p>{}</p>\n", txt));
   }
   acc.push_str(&ol_to_html(node.ol.clone()));
   acc.push_str(&ul_to_html(node.ul.clone()));
@@ -150,8 +150,8 @@ named!(ol<&str, Vec<StructuredOrderedListItem>>,
 fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollection> {
   if(level == 0) {
     let x = alt!(input,
-              do_parse!(tag!("# ") >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name)) |
-              map!(verify!(do_parse!(name: take_till!(|ch| ch == '\n') >> tag!("\n") >> underscore: take_while!(|c| c == '=') >> tag!("\n") >> (name, underscore)), |(txt, underscore): (&str, &str)| UnicodeSegmentation::graphemes(txt, true).collect::<Vec<&str>>().len() == UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len()), |(txt, len)| txt));
+              do_parse!(tag!("# ") >> name: take_till!(|ch| ch == '\n') >> tag!("\n\n") >> (name)) |
+              map!(verify!(do_parse!(name: take_till!(|ch| ch == '\n') >> tag!("\n") >> underscore: take_while!(|c| c == '=') >> tag!("\n\n") >> (name, underscore)), |(txt, underscore): (&str, &str)| UnicodeSegmentation::graphemes(txt, true).collect::<Vec<&str>>().len() == UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len()), |(txt, len)| txt));
     match x {
       Ok((rest, name)) => h_sub_wrapper(rest, level, name),
       _                => panic!("No header found.")
@@ -180,7 +180,7 @@ fn h_sub_wrapper<'a>(input: &'a str, level: u8, name: &'a str) -> IResult<&'a st
     (StructuredCollection {
       level: level,
       name: name,
-      text: (if text.len() == 0 || (text.len() == 1 && text[0] == "") { None } else { Some(text) }),
+      text: (if text.len() == 0 || (text.len() == 1 && text[0] == "") { None } else { Some(text.iter().fold(String::new(), |acc, x| acc + &format!("{}\n", x)).clone()) }),
       ol: ols,
       ul: uls,
       headings: headings
