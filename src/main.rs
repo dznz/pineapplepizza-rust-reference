@@ -92,25 +92,28 @@ fn all_to_html(node: &StructuredCollection) -> String {
 
 fn ul_wrapper<'a>(input: &'a str, sepb: bool) -> IResult<&'a str, Vec<StructuredListItem<'a>>> {
     let sep = (if sepb {"- "} else {"* "});
-    many1!(input, do_parse!(
-            tag!(sep)  >>
-      name: take_till!(|ch| ch == '\n') >>
-            tag!("\n") >>
-      kv:   map!(many0!(do_parse!(tag!("  ") >>
-              val: separated_pair!(take_till!(|ch| ch == ':' || ch == '\n'), tag!(": "), take_till!(|ch| ch == ':' || ch == '\n')) >> tag!("\n") >> (val))), |vec: Vec<_>| vec.into_iter().collect()) >>
-            (StructuredListItem { name: name, kv: kv })
-    ))
+    do_parse!(input,
+      it: many1!(do_parse!(
+              tag!(sep)  >>
+        name: take_till!(|ch| ch == '\n') >>
+              tag!("\n") >>
+        kv:   map!(many0!(do_parse!(tag!("  ") >>
+                val: separated_pair!(take_till!(|ch| ch == ':' || ch == '\n'), tag!(": "), take_till!(|ch| ch == ':' || ch == '\n')) >> tag!("\n") >> (val))), |vec: Vec<_>| vec.into_iter().collect()) >>
+              (StructuredListItem { name: name, kv: kv })
+      )) >> cond!(it.len() > 0, tag!("\n")) >> (it)
+    )
 }
 
 fn ol_wrapper<'a>(input: &'a str) -> IResult<&'a str, Vec<StructuredOrderedListItem<'a>>> {
-    //let sep = (if sepb {"- "} else {"* "});
-    many0!(input, do_parse!(
-      num:  call!(nom::digit) >> // Eventually, validate using this
-            tag!(". ")  >>
-      name: take_till!(|ch| ch == '\n') >>
-            tag!("\n") >>
-            (StructuredOrderedListItem { name: name })
-    ))
+    do_parse!(input,
+      it: many0!(do_parse!(
+        num:  call!(nom::digit) >> // Eventually, validate using this
+              tag!(". ")  >>
+        name: take_till!(|ch| ch == '\n') >>
+              tag!("\n") >>
+              (StructuredOrderedListItem { name: name })
+      )) >> cond!(it.len() > 0, tag!("\n")) >> (it)
+    )
 }
 
 
