@@ -175,11 +175,12 @@ named!(document<&str, StructuredCollection>,
 fn main() {
   let args: Vec<String> = env::args().collect();
   if (args.len() < 4) {
-    println!("Usage: pineapplepizza [FILE] (--html|...) [OUTPUT]");
+    println!("Usage: pineapplepizza [FILE] (--html|--rust-debug) [OUTPUT]");
     return;
   }
   let input_file = args[1].clone();
-  let conversion_type = args[2].clone(); // For now we only support --html
+  let conversion_type_ = args[2].clone();
+  let conversion_type = conversion_type_.as_str();
   let output_file = args[3].clone();
   let path_in = Path::new(&input_file);
   let path_out = Path::new(&output_file);
@@ -202,8 +203,11 @@ fn main() {
     Ok((_, it)) => it,
     bad         => panic!(format!("{:?}", bad))
   };
-  println!("{:?}", doc);
-  println!("{}", all_to_html(&doc));
+  match conversion_type {
+    "--rust-debug" => println!("{:?}", doc),
+    "--html"       => println!("{}", all_to_html(&doc)),
+    x              => println!("Did not understand flag: {}", x),
+  }
 }
 
 #[test]
