@@ -2,6 +2,11 @@
 extern crate nom;
 
 extern crate unicode_segmentation;
+extern crate serde;
+extern crate serde_json;
+
+#[macro_use]
+extern crate serde_derive;
 
 use std::env;
 use std::option;
@@ -16,18 +21,18 @@ use nom::ErrorKind::Custom;
 
 use unicode_segmentation::UnicodeSegmentation;
 
-#[derive(Debug,PartialEq,Eq,Clone)]
+#[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
 pub struct StructuredListItem<'a> {
   pub name: &'a str,
   pub kv: HashMap<&'a str, &'a str>
 }
 
-#[derive(Debug,PartialEq,Eq,Clone)]
+#[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
 pub struct StructuredOrderedListItem<'a> {
   pub name: &'a str,
 }
 
-#[derive(Debug,PartialEq,Eq,Clone)]
+#[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
 pub struct StructuredCollection<'a> {
   level: u8,
   name: &'a str,
@@ -175,7 +180,7 @@ named!(document<&str, StructuredCollection>,
 fn main() -> std::io::Result<()> {
   let args: Vec<String> = env::args().collect();
   if (args.len() < 3) {
-    println!("Usage: pineapplepizza [FILE] (--html|--rust-debug) [OUTPUT?]");
+    println!("Usage: pineapplepizza [FILE] (--html|--rust-debug|--json) [OUTPUT?]");
     return Ok(());
   }
   let input_file = args[1].clone();
@@ -205,6 +210,10 @@ fn main() -> std::io::Result<()> {
   let output = match conversion_type {
     "--rust-debug" => format!("{:?}", doc),
     "--html"       => format!("{}", all_to_html(&doc)),
+    "--json"       => match serde_json::to_string(&doc) {
+      Ok(x)  => format!("{}", x),
+      Err(x) => panic!("{}", x),
+    },
     x              => panic!("Did not understand flag: {}", x),
   };
   if print_out {
