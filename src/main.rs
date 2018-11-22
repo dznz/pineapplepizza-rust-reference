@@ -172,18 +172,17 @@ named!(document<&str, StructuredCollection>,
   apply!(h_wrapper, 0)
 );
 
-fn main() {
+fn main() -> std::io::Result<()> {
   let args: Vec<String> = env::args().collect();
-  if (args.len() < 4) {
-    println!("Usage: pineapplepizza [FILE] (--html|--rust-debug) [OUTPUT]");
-    return;
+  if (args.len() < 3) {
+    println!("Usage: pineapplepizza [FILE] (--html|--rust-debug) [OUTPUT?]");
+    return Ok(());
   }
   let input_file = args[1].clone();
   let conversion_type_ = args[2].clone();
   let conversion_type = conversion_type_.as_str();
-  let output_file = args[3].clone();
+  let print_out = (args.len() == 3);
   let path_in = Path::new(&input_file);
-  let path_out = Path::new(&output_file);
   let mut file = match File::open(&path_in) {
     // The `description` method of `io::Error` returns a string that
     // describes the error
@@ -203,10 +202,20 @@ fn main() {
     Ok((_, it)) => it,
     bad         => panic!(format!("{:?}", bad))
   };
-  match conversion_type {
-    "--rust-debug" => println!("{:?}", doc),
-    "--html"       => println!("{}", all_to_html(&doc)),
-    x              => println!("Did not understand flag: {}", x),
+  let output = match conversion_type {
+    "--rust-debug" => format!("{:?}", doc),
+    "--html"       => format!("{}", all_to_html(&doc)),
+    x              => panic!("Did not understand flag: {}", x),
+  };
+  if print_out {
+    println!("{}", output);
+    Ok(())
+  } else {
+    let output_file = args[3].clone();
+    //let path_out = Path::new(&output_file);
+    let mut out = File::create(output_file)?;
+    write!(out, "{}", output)?;
+    Ok(())
   }
 }
 
