@@ -41,35 +41,37 @@ pub struct StructuredCollection<'a> {
 fn kv_to_html<'a>(kv: HashMap<&'a str, &'a str>) -> String {
   let mut acc = String::new();
   for (k, v) in kv.iter() {
-    acc.push_str(&format!("{}{}{}{}", k, ": ", v, "<br/>\r"));
+    acc.push_str(&format!("{}{}{}{}", k, ": ", v, "<br/>\n"));
   }
   acc
 }
 fn ul_to_html(ul: Vec<StructuredListItem>) -> String {
-  let mut acc = String::from("<ul>\r");
+  let mut acc = String::from("<ul>\n");
   for u in ul {
     acc.push_str(&format!("{}{}{}{}{}", "<li>", u.name, "<br/>", kv_to_html(u.kv.clone()), "</li>"));
   }
-  acc.push_str("</ul>\r");
+  acc.push_str("</ul>\n");
   acc
 }
 fn ol_to_html(ol: Vec<StructuredOrderedListItem>) -> String {
-  let mut acc = String::from("<ol>\r");
+  let mut acc = String::from("<ol>\n");
   for o in ol {
     acc.push_str(&format!("{}{}{}", "<li>", o.name, "</li>"));
   }
-  acc.push_str("</ol>\r");
+  acc.push_str("</ol>\n");
   acc
 }
 fn all_to_html(node: &StructuredCollection) -> String {
   let mut acc = String::new();
   if node.level == 0 {
-    acc.push_str(&format!("<html>\r<head>\r<title>{}</title>\r</head>\r<body>\r", node.name));
+    let foo = format!("<html>\n<head>\n<title>{}</title>\n</head>\n<body>\n", node.name);
+    acc.push_str(&foo);
   } else {
-    acc.push_str(&format!("<h{}>{}</h{}>\r", node.level, node.name, node.level));
+    let foo = format!("<h{}>{}</h{}>\n", node.level, node.name, node.level);
+    acc.push_str(&foo);
   }
   for txt in node.text.clone() {
-    acc.push_str(&format!("<p>{}</p>\r", txt.join("")));
+    acc.push_str(&format!("<p>{}</p>\n", txt.join("")));
   }
   acc.push_str(&ol_to_html(node.ol.clone()));
   acc.push_str(&ul_to_html(node.ul.clone()));
@@ -77,7 +79,7 @@ fn all_to_html(node: &StructuredCollection) -> String {
     acc.push_str(&all_to_html(h));
   }
   if node.level == 0 {
-    acc.push_str("</body>\r</html>");
+    acc.push_str("</body>\n</html>");
   }
   acc
 }
