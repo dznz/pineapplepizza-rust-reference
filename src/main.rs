@@ -18,7 +18,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use nom::ErrorKind::Custom;
-
+use serde::ser::{Serialize, Serializer, SerializeSeq, SerializeMap};
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
@@ -28,7 +28,7 @@ pub struct StructuredListItem<'a> {
   pub kv: HashMap<&'a str, &'a str>
 }
 
-#[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
+#[derive(Debug,PartialEq,Eq,Clone,Deserialize)]
 pub struct StructuredOrderedListItem<'a> {
   pub name: &'a str,
 }
@@ -46,6 +46,15 @@ pub struct StructuredCollection<'a> {
   ul: Vec<StructuredListItem<'a>>,
   #[serde(skip_serializing_if = "Vec::is_empty")]
   headings: Vec<StructuredCollection<'a>>
+}
+
+impl<'a> Serialize for StructuredOrderedListItem<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.name)
+    }
 }
 
 // TODO: Actually do something proper here, eg using bodil's typed_html or at least using string escaping
