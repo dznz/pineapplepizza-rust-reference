@@ -46,6 +46,9 @@ fn kv_to_html<'a>(kv: HashMap<&'a str, &'a str>) -> String {
   acc
 }
 fn ul_to_html(ul: Vec<StructuredListItem>) -> String {
+  if ul.len() == 0 {
+    return String::new();
+  }
   let mut acc = String::from("<ul>\n");
   for u in ul {
     acc.push_str(&format!("{}{}{}{}{}", "<li>", u.name, "<br/>", kv_to_html(u.kv.clone()), "</li>"));
@@ -54,6 +57,9 @@ fn ul_to_html(ul: Vec<StructuredListItem>) -> String {
   acc
 }
 fn ol_to_html(ol: Vec<StructuredOrderedListItem>) -> String {
+  if ol.len() == 0 {
+    return String::new();
+  }
   let mut acc = String::from("<ol>\n");
   for o in ol {
     acc.push_str(&format!("{}{}{}", "<li>", o.name, "</li>"));
