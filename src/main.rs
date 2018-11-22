@@ -24,6 +24,7 @@ use unicode_segmentation::UnicodeSegmentation;
 #[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
 pub struct StructuredListItem<'a> {
   pub name: &'a str,
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub kv: HashMap<&'a str, &'a str>
 }
 
@@ -34,11 +35,16 @@ pub struct StructuredOrderedListItem<'a> {
 
 #[derive(Debug,PartialEq,Eq,Clone,Serialize, Deserialize)]
 pub struct StructuredCollection<'a> {
+  #[serde(skip_serializing)]
   level: u8,
   name: &'a str,
+  #[serde(skip_serializing_if = "Option::is_none")]
   text: Option<Vec<&'a str>>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   ol: Vec<StructuredOrderedListItem<'a>>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   ul: Vec<StructuredListItem<'a>>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   headings: Vec<StructuredCollection<'a>>
 }
 
