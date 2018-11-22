@@ -126,7 +126,9 @@ named!(ol<&str, Vec<StructuredOrderedListItem>>,
 
 fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollection> {
   if(level == 0) {
-    let x = alt!(input, do_parse!(tag!("# ") >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name)) | map!(verify!(do_parse!(name: take_till!(|ch| ch == '\n') >> underscore: take_while!(|c| c == '=') >> tag!("\n") >> (name, underscore)), |(txt, underscore): (&str, &str)| UnicodeSegmentation::graphemes(txt, true).collect::<Vec<&str>>().len() == UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len()), |(txt, len)| txt));
+    let x = alt!(input,
+              do_parse!(tag!("# ") >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name)) |
+              map!(verify!(do_parse!(name: take_till!(|ch| ch == '\n') >> tag!("\n") >> underscore: take_while!(|c| c == '=') >> tag!("\n") >> (name, underscore)), |(txt, underscore): (&str, &str)| UnicodeSegmentation::graphemes(txt, true).collect::<Vec<&str>>().len() == UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len()), |(txt, len)| txt));
     match x {
       Ok((rest, name)) => h_sub_wrapper(rest, level, name),
       _                => panic!("Do some actual checking here")
