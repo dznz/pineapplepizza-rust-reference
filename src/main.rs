@@ -155,7 +155,7 @@ fn h_sub_wrapper<'a>(input: &'a str, level: u8, name: &'a str) -> IResult<&'a st
     (StructuredCollection {
       level: level,
       name: name,
-      text: Some(text), // TODO: Do proper Some/None checking here
+      text: (if text.len() == 0 || (text.len() == 1 && text[0] == "") { None } else { Some(text) }), // TODO: Do proper Some/None checking here
       ol: ols,
       ul: uls,
       headings: headings
