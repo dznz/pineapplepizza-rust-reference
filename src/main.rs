@@ -259,7 +259,7 @@ fn parse_list_items() {
       kv: [].iter().cloned().collect(),
     },
   );
-  let path = Path::new("list_items.🍍🍕.slice");
+  let path = Path::new("examples/list_items.🍍🍕.slice");
   let display = path.display();
 
   // Open the path in read-only mode, returns `io::Result<File>`
