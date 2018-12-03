@@ -1,0 +1,17 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pineapplepizza
+Upstream-Contact: Justin Marsh <justin.marsh@flaviusb.net>
+Source: https://github.com/flaviusb/pineapplepizza-rust-reference
+
+Files: *
+Copyright: 2018 Justin Marsh <justin.marsh@flaviusb.net>
+License: GPL-3.0
+
+Files: debian/*
+Copyright:
+ 2018 Debian Rust Maintainers <pkg-rust-maintainers@alioth-lists.debian.net>
+ 2018 Justin Marsh <justin.marsh@flaviusb.net>
+License: GPL-3.0
+
+License: GPL-3.0
+ Debian systems provide the GPL 3.0 in /usr/share/common-licenses/GPL-3
