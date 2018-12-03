@@ -1,10 +1,14 @@
 [package]
 name = "pineapplepizza"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Justin (:flaviusb) Marsh <justin.marsh@flaviusb.net>"]
 description = "This is a reference implementation of the pineapplepizza format. The format is both lightweight markup and data serialization; like pineapple and pizza, two great things that may or may not be good together. The spec is at https://github.com/flaviusb/pineapplepizza"
 repository = "https://github.com/flaviusb/pineapplepizza-rust-reference"
 license = "GPL-3.0"
+readme="README.md"
+keywords=[]
+categories=["command-line-utilities", "parser-implementations"]
+
 
 [dependencies]
 nom = "^4.1"
