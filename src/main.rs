@@ -120,19 +120,19 @@ fn ul_wrapper<'a>(input: &'a str, sepb: bool) -> IResult<&'a str, Vec<Structured
         kv:   map!(many0!(do_parse!(tag!("  ") >>
                 val: separated_pair!(take_till!(|ch| ch == ':' || ch == '\n'), tag!(": "), take_till!(|ch| ch == ':' || ch == '\n')) >> tag!("\n") >> (val))), |vec: Vec<_>| vec.into_iter().collect()) >>
               (StructuredListItem { name: name, kv: kv })
-      )) >> cond!(it.len() > 0, tag!("\n")) >> (it)
+      )) >> tag!("\n") >> (it)
     )
 }
 
 fn ol_wrapper<'a>(input: &'a str) -> IResult<&'a str, Vec<StructuredOrderedListItem<'a>>> {
     do_parse!(input,
-      it: many0!(do_parse!(
+      it: many1!(do_parse!(
         num:  call!(nom::digit) >> // Eventually, validate using this
               tag!(". ")  >>
         name: take_till!(|ch| ch == '\n') >>
               tag!("\n") >>
               (StructuredOrderedListItem { name: name })
-      )) >> cond!(it.len() > 0, tag!("\n")) >> (it)
+      )) >> tag!("\n") >> (it)
     )
 }
 
@@ -144,7 +144,9 @@ named!(ul<&str, Vec<StructuredListItem>>,
 );
 
 named!(ol<&str, Vec<StructuredOrderedListItem>>,
-  call!(ol_wrapper)
+  alt!(
+    call!(ol_wrapper) | value!(vec!())
+  )
 );
 
 fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollection> {
@@ -161,7 +163,7 @@ fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollec
     let x = do_parse!(input, tag!(hashes) >> many0!(tag!(" ")) >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name));
     match x {
       Ok((rest, name)) => h_sub_wrapper(rest, level, name),
-      _                => Err(nom::Err::Error(nom::Context::Code(input, nom::ErrorKind::Custom(1)))) // panic!("Do some actual checking here")
+      _                => Err(nom::Err::Error(error_position!(input, nom::ErrorKind::Custom(1)))) // panic!("Do some actual checking here")
     }
   }
 }
@@ -170,7 +172,7 @@ fn h_sub_wrapper<'a>(input: &'a str, level: u8, name: &'a str) -> IResult<&'a st
     // Assume that something is text until we hit a start token for anything else
     text: many0!(do_parse!(
             // Check against start tokens - TODO: be more thorough about this
-            not!(alt!(tag!("- ") | tag!("* ") | do_parse!(call!(nom::digit) >> tag!(". ") >> ("")) | do_parse!(take_while!(|c| c == '#') >> tag!(" ") >> ("")))) >>
+            not!(alt!(tag!("---\n") | tag!("- ") | tag!("* ") | do_parse!(call!(nom::digit) >> tag!(". ") >> ("")) | do_parse!(tag!("#") >> take_while!(|c| c == '#') >> tag!(" ") >> ("")))) >>
             line: take_till!(|ch| ch == '\n') >> tag!("\n") >>
             (line)
             )) >>
@@ -189,7 +191,7 @@ fn h_sub_wrapper<'a>(input: &'a str, level: u8, name: &'a str) -> IResult<&'a st
 }
 
 named!(document<&str, StructuredCollection>,
-  apply!(h_wrapper, 0)
+    apply!(h_wrapper, 0)
 );
 
 fn main() -> std::io::Result<()> {

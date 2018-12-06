@@ -11,8 +11,11 @@ categories=["command-line-utilities", "parser-implementations"]
 
 
 [dependencies]
-nom = "^4.1"
 unicode-segmentation = "1.2.1"
 serde = "1.0.60"
 serde_derive = "1.0"
 serde_json = "1.0.33"
+
+[dependencies.nom]
+version = "^4.1"
+required_features = ["verbose-errors"]
