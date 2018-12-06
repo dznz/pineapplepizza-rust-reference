@@ -290,3 +290,29 @@ fn parse_list_items() {
   // HashMaps are unordered, so we can't do the naive check here, as it will sometimes give different serialisations
   //assert_eq!(ul_to_html(list_items), "<ul>\r<li>Foo bar baz<br/>key: value<br/>\r</li><li>Other stuff<br/>Description: Thing<br/>\rCaveat: Stuff<br/>\r</li><li>No kvs<br/></li></ul>\r");
 }
+
+#[test]
+fn parse_file_test() {
+  let files = vec!(("examples/welp.🍍🍕", StructuredCollection { level: 0, name: "🍍🍕", text: Some("dklh\n\n".to_string()), ol: vec![], ul: vec![], headings: vec![StructuredCollection { level: 1, name: "1", text: None, ol: vec![], ul: vec![], headings: vec![] }, StructuredCollection { level: 1, name: "2", text: None, ol: vec![], ul: vec![], headings: vec![] }, StructuredCollection { level: 1, name: "3", text: None, ol: vec![], ul: vec![], headings: vec![StructuredCollection { level: 2, name: "4", text: None, ol: vec![], ul: vec![], headings: vec![] }, StructuredCollection { level: 2, name: "5", text: None, ol: vec![], ul: vec![], headings: vec![] }] }, StructuredCollection { level: 1, name: "6", text: Some("\nfwfd\n\niwdefwedfgwfgwd\n".to_string()), ol: vec![], ul: vec![], headings: vec![] }] }), ("examples/self.🍍🍕", StructuredCollection { level: 0, name: "🍍🍕", text: Some("Pineapplepizza example file.\n\n".to_string()), ol: vec![StructuredOrderedListItem { name: "We can list things." }, StructuredOrderedListItem { name: "One after the other." }], ul: vec![], headings: vec![StructuredCollection { level: 1, name: "We can have empty sections", text: Some("\nqwldjkhhf\n\n".to_string()), ol: vec![StructuredOrderedListItem { name: "wdlkfjhwqdfh" }, StructuredOrderedListItem { name: "lkdsahflkdfh" }], ul: vec![], headings: vec![StructuredCollection { level: 2, name: "Or sections with things in them", text: Some("\nwlfjkehwldfh\n\n".to_string()), ol: vec![StructuredOrderedListItem { name: "Such as ordered lists" }, StructuredOrderedListItem { name: "ghwelkhglkwerhg" }, StructuredOrderedListItem { name: "lkdjhflwdhflwdf" }], ul: vec![], headings: vec![] }, StructuredCollection { level: 2, name: "Sub sub heading", text: Some("\nStuff\n\n\n".to_string()), ol: vec![], ul: vec![], headings: vec![] }] }] }));
+  let paths = files.into_iter().map(|(file, literal)| (Path::new(file), literal));
+  for (path, lit) in paths {
+    let mut s = String::new();
+    let mut fd = match File::open(&path) {
+      Err(why) => panic!("couldn't open {}: {}", path.display(),
+                                                 why.description()),
+      Ok(file) => file,
+    };
+    let mut contents = String::new();
+    match fd.read_to_string(&mut contents) {
+        Err(why) => panic!("couldn't read {}: {}", path.display(),
+                                                   why.description()),
+        _        => ()
+    }
+
+    let doc = match document(&contents) {
+      Ok((_, it)) => it,
+      bad         => panic!(format!("failed parsing {}: {:?}", path.display(), bad))
+    };
+    assert_eq!(doc, lit);
+  }
+}
