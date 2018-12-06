@@ -172,7 +172,7 @@ fn h_sub_wrapper<'a>(input: &'a str, level: u8, name: &'a str) -> IResult<&'a st
     // Assume that something is text until we hit a start token for anything else
     text: many0!(do_parse!(
             // Check against start tokens - TODO: be more thorough about this
-            not!(alt!(tag!("---\n") | tag!("- ") | tag!("* ") | do_parse!(call!(nom::digit) >> tag!(". ") >> ("")) | do_parse!(tag!("#") >> take_while!(|c| c == '#') >> tag!(" ") >> ("")))) >>
+            not!(alt!(eof!() | tag!("---\n") | tag!("- ") | tag!("* ") | do_parse!(call!(nom::digit) >> tag!(". ") >> ("")) | do_parse!(tag!("#") >> take_while!(|c| c == '#') >> tag!(" ") >> ("")))) >>
             line: take_till!(|ch| ch == '\n') >> tag!("\n") >>
             (line)
             )) >>
