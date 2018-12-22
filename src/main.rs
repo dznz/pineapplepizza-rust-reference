@@ -136,6 +136,13 @@ fn ol_wrapper<'a>(input: &'a str) -> IResult<&'a str, Vec<StructuredOrderedListI
     )
 }
 
+named!(linecomment<&str, &str>,
+  do_parse!(tag!("//") >> take_till!(|ch| ch == '\n') >> tag!("\n") >> (""))
+);
+
+named!(spancomment<&str, &str>,
+  do_parse!(tag!("/*") >> take_until_and_consume!("*/") >> (""))
+);
 
 named!(ul<&str, Vec<StructuredListItem>>,
   alt!(
@@ -147,6 +154,20 @@ named!(ol<&str, Vec<StructuredOrderedListItem>>,
   alt!(
     call!(ol_wrapper) | value!(vec!())
   )
+);
+
+named!(take_till_eol_with_comments<&str, &str>,
+       alt!(
+           escaped!(take_till!(|ch| (ch == '\n') || (ch == '\\') || (ch == '/')), '\\',
+             alt!(
+                 tag!("n")  => {|_| "\n"}
+               | tag!("\\") => {|_| "\\"}
+               | tag!("/")  => {|_| "/"}
+               | tag!("\n") => {|_| ""}
+             )
+         )
+         | linecomment
+         | spancomment)
 );
 
 fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollection> {
