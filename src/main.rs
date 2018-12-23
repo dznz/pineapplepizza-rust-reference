@@ -158,6 +158,7 @@ named!(ol<&str, Vec<StructuredOrderedListItem>>,
 
 named!(take_till_eol_with_comments<&str, String>,
        complete!(do_parse!(txt: complete!(many1!(alt_complete!(
+           spancomment |
            escaped_transform!(call!(accept_stuff), '\\',
              alt_complete!(
                  tag!("n")  => {|_| "\n".to_string()}
@@ -165,8 +166,8 @@ named!(take_till_eol_with_comments<&str, String>,
                | tag!("/")  => {|_| "/".to_string()}
                | tag!("\n") => {|_| "".to_string()}
              )
-         )
-         | spancomment))) >> end: complete!(alt!(tag!("\n") | complete!(linecomment))) >> (txt.into_iter().collect())))
+           )
+         ))) >> end: complete!(alt!(tag!("\n") | complete!(linecomment))) >> (txt.into_iter().collect())))
 );
 
 pub fn accept_stuff<T>(input: T) -> IResult<T, T, u32>
@@ -321,7 +322,7 @@ fn parse_list_items() {
 
 #[test]
 fn parse_text_comments() {
-  let test_set = vec!(("foo bar baz\n\n\\/\\/foo\nquuz\n\n", "foo bar baz"),("foo bar baz //comment\n\n\\/\\/foo\nquuz\n\n", "foo bar baz "),("foo \\/ \\\\baz\n\n\\/\\/foo\nquuz\n\n", "foo / \\baz")/*,("foo /*bar*/ baz\n\n\\/\\/foo\nquuz\n\n", "foo  baz")*/);
+  let test_set = vec!(("foo bar baz\n\n\\/\\/foo\nquuz\n\n", "foo bar baz"),("foo bar baz //comment\n\n\\/\\/foo\nquuz\n\n", "foo bar baz "),("foo \\/ \\\\baz\n\n\\/\\/foo\nquuz\n\n", "foo / \\baz"),("foo /*bar*/ baz\n\n\\/\\/foo\nquuz\n\n", "foo  baz"),("foo \\\n ba∩z\n\n\\/\\/foo\nquuz\n\n", "foo  ba∩z"),("foo \\n ba∩z\n\n\\/\\/foo\nquuz\n\n", "foo \n ba∩z"));
   for (test, expected) in test_set {
     let result = match take_till_eol_with_comments(&test) {
       Ok((_, x)) => x,
