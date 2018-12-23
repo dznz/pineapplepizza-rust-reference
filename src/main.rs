@@ -202,7 +202,7 @@ fn h_sub_wrapper<'a>(input: &'a str, level: u8, name: &'a str) -> IResult<&'a st
     text: many0!(do_parse!(
             // Check against start tokens - TODO: be more thorough about this
             not!(alt!(eof!() | tag!("---\n") | tag!("- ") | tag!("* ") | do_parse!(call!(nom::digit) >> tag!(". ") >> ("")) | do_parse!(tag!("#") >> take_while!(|c| c == '#') >> tag!(" ") >> ("")))) >>
-            line: call!(take_till_eol_with_comments) >> tag!("\n") >>
+            line: call!(take_till_eol_with_comments) >>
             (line)
             )) >>
     ols: call!(ol) >>
@@ -331,7 +331,7 @@ fn parse_text_comments() {
     assert_eq!(expected, result);
   }
 }
-/*
+
 #[test]
 fn parse_file_test() {
   let files = vec!(("examples/welp.🍍🍕", StructuredCollection { level: 0, name: "🍍🍕", text: Some("dklh\n\n".to_string()), ol: vec![], ul: vec![], headings: vec![StructuredCollection { level: 1, name: "1", text: None, ol: vec![], ul: vec![], headings: vec![] }, StructuredCollection { level: 1, name: "2", text: None, ol: vec![], ul: vec![], headings: vec![] }, StructuredCollection { level: 1, name: "3", text: None, ol: vec![], ul: vec![], headings: vec![StructuredCollection { level: 2, name: "4", text: None, ol: vec![], ul: vec![], headings: vec![] }, StructuredCollection { level: 2, name: "5", text: None, ol: vec![], ul: vec![], headings: vec![] }] }, StructuredCollection { level: 1, name: "6", text: Some("\nfwfd\n\niwdefwedfgwfgwd\n".to_string()), ol: vec![], ul: vec![], headings: vec![] }] }), ("examples/self.🍍🍕", StructuredCollection { level: 0, name: "🍍🍕", text: Some("Pineapplepizza example file.\n\n".to_string()), ol: vec![StructuredOrderedListItem { name: "We can list things." }, StructuredOrderedListItem { name: "One after the other." }], ul: vec![], headings: vec![StructuredCollection { level: 1, name: "We can have empty sections", text: Some("\nqwldjkhhf\n\n".to_string()), ol: vec![StructuredOrderedListItem { name: "wdlkfjhwqdfh" }, StructuredOrderedListItem { name: "lkdsahflkdfh" }], ul: vec![], headings: vec![StructuredCollection { level: 2, name: "Or sections with things in them", text: Some("\nwlfjkehwldfh\n\n".to_string()), ol: vec![StructuredOrderedListItem { name: "Such as ordered lists" }, StructuredOrderedListItem { name: "ghwelkhglkwerhg" }, StructuredOrderedListItem { name: "lkdjhflwdhflwdf" }], ul: vec![], headings: vec![] }, StructuredCollection { level: 2, name: "Sub sub heading", text: Some("\nStuff\n\n\n".to_string()), ol: vec![], ul: vec![], headings: vec![] }] }] }));
@@ -357,4 +357,4 @@ fn parse_file_test() {
     assert_eq!(doc, lit);
   }
 }
-*/
+
