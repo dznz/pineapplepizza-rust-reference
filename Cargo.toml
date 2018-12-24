@@ -1,6 +1,6 @@
 [package]
 name = "pineapplepizza"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Justin (:flaviusb) Marsh <justin.marsh@flaviusb.net>"]
 description = "This is a reference implementation of the pineapplepizza format. The format is both lightweight markup and data serialization; like pineapple and pizza, two great things that may or may not be good together. The spec is at https://github.com/flaviusb/pineapplepizza"
 repository = "https://github.com/flaviusb/pineapplepizza-rust-reference"
