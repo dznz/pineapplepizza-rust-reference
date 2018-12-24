@@ -126,18 +126,21 @@ fn ul_wrapper<'a>(input: &'a str, sepb: bool) -> IResult<&'a str, Vec<Structured
 
 fn ol_wrapper<'a>(input: &'a str) -> IResult<&'a str, Vec<StructuredOrderedListItem<'a>>> {
     do_parse!(input,
-      it: many1!(do_parse!(
+      it: many1!(alt!(do_parse!(
         num:  call!(nom::digit) >> // Eventually, validate using this
               tag!(". ")  >>
         name: take_till!(|ch| ch == '\n') >>
               tag!("\n") >>
-              (StructuredOrderedListItem { name: name })
-      )) >> tag!("\n") >> (it)
+              (Some(StructuredOrderedListItem { name: name }))
+      ) | do_parse!(opt!(call!(nom::space)) >> alt!(linecomment2 | spancomment) >> ((None)))/**/)) >> tag!("\n") >> (it.into_iter().flatten().collect::<Vec<_>>())
     )
 }
 
 named!(linecomment<&str, &str>,
   do_parse!(tag!("//") >> take_till!(|ch| ch == '\n') >> tag!("\n") >> (""))
+);
+named!(linecomment2<&str, String>,
+  do_parse!(tag!("//") >> take_till!(|ch| ch == '\n') >> tag!("\n") >> ("".to_string()))
 );
 
 named!(spancomment<&str, String>,
