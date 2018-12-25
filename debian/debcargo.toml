@@ -1,0 +1,7 @@
+overlay = "."
+summary = "Pineapplepizza reference parser"
+uploaders = ["Justin Marsh <justin.marsh@flaviusb.net>"]
+description = """
+The reference parser for pineapplepizza, which is a lightweight markup/data serialisation format, similar to markdown and yaml, but simpler.
+It converts 🍍🍕 files into data formats such as JSON and markup such as html.
+"""
