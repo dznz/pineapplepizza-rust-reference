@@ -1,6 +1,7 @@
 pineapplepizza-rust-reference &emsp; [![Latest Version]][crates.io]
 =============================
 
+[Latest Version]: https://img.shields.io/crates/v/pineapplepizza.svg
 [crates.io]: https://crates.io/crates/pineapplepizza
 
 The reference parser for [pineapplepizza](https://github.com/flaviusb/pineapplepizza).
