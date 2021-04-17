@@ -11,7 +11,7 @@ extern crate serde_derive;
 use std::env;
 use std::option;
 use std::collections::HashMap;
-use nom::{IResult,InputTakeAtPosition,AsChar,ErrorKind};
+use nom::{IResult,InputTakeAtPosition,AsChar,ErrorKind,line_ending, not_line_ending, recognize};
 
 use std::error::Error;
 use std::fs::File;
@@ -115,32 +115,36 @@ fn ul_wrapper<'a>(input: &'a str, sepb: bool) -> IResult<&'a str, Vec<Structured
     do_parse!(input,
       it: many1!(do_parse!(
               tag!(sep)  >>
-        name: take_till!(|ch| ch == '\n') >>
-              tag!("\n") >>
+        name: get_till_newline >>
+            line_ending >>
         kv:   map!(many0!(do_parse!(tag!("  ") >>
-                val: separated_pair!(take_till!(|ch| ch == ':' || ch == '\n'), tag!(": "), take_till!(|ch| ch == ':' || ch == '\n')) >> tag!("\n") >> (val))), |vec: Vec<_>| vec.into_iter().collect()) >>
+                val: separated_pair!(take_till!(|ch| ch == ':' || ch == '\n'), tag!(": "), take_till!(|ch| ch == ':' || ch == '\n')) >> line_ending >> (val))), |vec: Vec<_>| vec.into_iter().collect()) >>
               (StructuredListItem { name: name, kv: kv })
-      )) >> tag!("\n") >> (it)
+      )) >> line_ending >> (it)
     )
 }
+
+named!(get_till_newline_or_colon<&str, &str>,
+  recognize!(do_parse!(many1!(not!(alt!(line_ending|tag!(": ")))) >> (1)))
+);
 
 fn ol_wrapper<'a>(input: &'a str) -> IResult<&'a str, Vec<StructuredOrderedListItem<'a>>> {
     do_parse!(input,
       it: many1!(alt!(do_parse!(
         num:  call!(nom::digit) >> // Eventually, validate using this
               tag!(". ")  >>
-        name: take_till!(|ch| ch == '\n') >>
-              tag!("\n") >>
+        name: get_till_newline >>
+              line_ending >>
               (Some(StructuredOrderedListItem { name: name }))
-      ) | do_parse!(opt!(call!(nom::space)) >> alt!(linecomment2 | spancomment) >> ((None)))/**/)) >> tag!("\n") >> (it.into_iter().flatten().collect::<Vec<_>>())
+      ) | do_parse!(opt!(call!(nom::space)) >> alt!(linecomment2 | spancomment) >> ((None)))/**/)) >> line_ending >> (it.into_iter().flatten().collect::<Vec<_>>())
     )
 }
 
 named!(linecomment<&str, &str>,
-  do_parse!(tag!("//") >> take_till!(|ch| ch == '\n') >> tag!("\n") >> (""))
+  do_parse!(tag!("//") >> get_till_newline >> line_ending >> (""))
 );
 named!(linecomment2<&str, String>,
-  do_parse!(tag!("//") >> take_till!(|ch| ch == '\n') >> tag!("\n") >> ("".to_string()))
+  do_parse!(tag!("//") >> get_till_newline >> line_ending >> ("".to_string()))
 );
 
 named!(spancomment<&str, String>,
@@ -167,10 +171,10 @@ named!(take_till_eol_with_comments<&str, String>,
                  tag!("n")  => {|_| "\n".to_string()}
                | tag!("\\") => {|_| "\\".to_string()}
                | tag!("/")  => {|_| "/".to_string()}
-               | tag!("\n") => {|_| "".to_string()}
+               | line_ending => {|_| "".to_string()}
              )
            )
-         ))) >> end: complete!(alt!(tag!("\n") | complete!(linecomment))) >> (txt.into_iter().collect())))
+         ))) >> end: complete!(alt!(line_ending | complete!(linecomment))) >> (txt.into_iter().collect())))
 );
 
 pub fn accept_stuff<T>(input: T) -> IResult<T, T, u32>
@@ -181,21 +185,26 @@ where
   input.split_at_position1({|item| { let ch = item.as_char(); (((ch == '\n') || (ch == '\\')) || (ch == '/'))} }, ErrorKind::Custom(2))
 }
 
+named!(get_till_newline<&str, &str>,
+  recognize!(do_parse!(many1!(not_line_ending) >> (1)))
+);
+
 fn h_wrapper<'a>(input: &'a str, level: u8) -> IResult<&'a str, StructuredCollection> {
   if(level == 0) {
     let x = alt!(input,
-              do_parse!(tag!("# ") >> name: take_till!(|ch| ch == '\n') >> tag!("\n\n") >> (name)) |
-              map!(verify!(do_parse!(name: take_till!(|ch| ch == '\n') >> tag!("\n") >> underscore: take_while!(|c| c == '=') >> tag!("\n\n") >> (name, underscore)), |(txt, underscore): (&str, &str)| (UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len() > 3) || (UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len() == UnicodeSegmentation::graphemes(txt, true).collect::<Vec<&str>>().len()) ), |(txt, len)| txt));
+              do_parse!(tag!("# ") >> name: get_till_newline >> line_ending >> line_ending >> (name)) |
+              map!(verify!(do_parse!(name: get_till_newline >> line_ending >> underscore: take_while!(|c| c == '=') >> line_ending >> line_ending >> (name, underscore)), |(txt, underscore): (&str, &str)| (UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len() > 3) || (UnicodeSegmentation::graphemes(underscore, true).collect::<Vec<&str>>().len() == UnicodeSegmentation::graphemes(txt, true).collect::<Vec<&str>>().len()) ), |(txt, len)| txt));
     match x {
       Ok((rest, name)) => h_sub_wrapper(rest, level, name),
       _                => panic!("No header found.")
     }
   } else {
     let hashes: &str = &"#".repeat(level as usize + 1);
-    let x = do_parse!(input, tag!(hashes) >> many0!(tag!(" ")) >> name: take_till!(|ch| ch == '\n') >> tag!("\n") >> (name));
+    let x = do_parse!(input, tag!(hashes) >> many0!(tag!(" ")) >> name: get_till_newline >> line_ending >> (name));
     match x {
       Ok((rest, name)) => h_sub_wrapper(rest, level, name),
-      _                => Err(nom::Err::Error(error_position!(input, nom::ErrorKind::Custom(1)))) // panic!("Do some actual checking here")
+      _                => Err(nom::Err::
+        Error(error_position!(input, nom::ErrorKind::Custom(1)))) // panic!("Do some actual checking here")
     }
   }
 }
@@ -204,7 +213,7 @@ fn h_sub_wrapper<'a>(input: &'a str, level: u8, name: &'a str) -> IResult<&'a st
     // Assume that something is text until we hit a start token for anything else
     text: many0!(do_parse!(
             // Check against start tokens - TODO: be more thorough about this
-            not!(alt!(eof!() | tag!("---\n") | tag!("- ") | tag!("* ") | do_parse!(call!(nom::digit) >> tag!(". ") >> ("")) | do_parse!(tag!("#") >> take_while!(|c| c == '#') >> tag!(" ") >> ("")))) >>
+            not!(alt!(eof!() | do_parse!(tag!("---") >> line_ending >> ("")) | tag!("- ") | tag!("* ") | do_parse!(call!(nom::digit) >> tag!(". ") >> ("")) | do_parse!(tag!("#") >> take_while!(|c| c == '#') >> tag!(" ") >> ("")))) >>
             line: call!(take_till_eol_with_comments) >>
             (line)
             )) >>
